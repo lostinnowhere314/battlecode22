@@ -8,9 +8,9 @@ public strictfp class RobotPlayer {
 	
 	public static void run(RobotController rc) throws GameActionException {
 		switch(rc.getType()) {
-	        case ARCHON:     robot = new ArchonController();  break;
+	        case ARCHON:     robot = new ArchonController(rc);  break;
 	        case MINER:      robot = new MinerController();   break;
-	        case SOLDIER:    robot = null; break;
+	        case SOLDIER:    robot = new SoldierController(); break;
 	        case LABORATORY: 
 	        case WATCHTOWER: 
 	        case BUILDER:
