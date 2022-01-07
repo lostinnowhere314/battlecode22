@@ -113,6 +113,7 @@ public class Util {
 		}
 		if (best_direction != Direction.CENTER) {
 			rc.move(best_direction);
+			return MoveResult.SUCCESS;
 		}
 		return MoveResult.FAILURE;
 	}
@@ -143,6 +144,7 @@ public class Util {
 		}
 		if (best_direction != Direction.CENTER) {
 			rc.move(best_direction);
+			return MoveResult.SUCCESS;
 		}
 		return MoveResult.FAILURE;
 	}
@@ -173,6 +175,7 @@ public class Util {
 		}
 		if (best_direction != Direction.CENTER) {
 			rc.move(best_direction);
+			return MoveResult.SUCCESS;
 		}
 		return MoveResult.FAILURE;
 	}
