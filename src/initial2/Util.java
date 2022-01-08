@@ -136,7 +136,7 @@ public class Util {
 					best_direction = targetDir;
 					switch(bugDirection) {
 						case CLOCKWISE:
-							best_passability--;
+							best_passability++;
 						default:					
 					}
 				}
@@ -167,7 +167,7 @@ public class Util {
 					best_direction = targetDir;
 					switch(bugDirection) {
 						case CLOCKWISE:
-							best_passability--;
+							best_passability++;
 						default:					
 					}
 				}
