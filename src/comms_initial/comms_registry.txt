@@ -9,7 +9,7 @@ Things to add:
 1:
 	Lower 12: Archon 1 pos
 	14-15: total archon count-1
-	12-13: symmetry type
+	12-13: symmetry type (unimplemented)
 		0 - unknown
 		1 - h reflect
 		2 - v reflect
@@ -19,11 +19,11 @@ Things to add:
 3:
 	Lower 12: Archon 3 pos
 4:
-	bit 15 - enemy spotted?
+	bit 15 - enemy spotted? (unimplemented)
 5:
-	Miner ct
+	Miner ct (unimplemented)
 6:
-	Solder ct
+	Solder ct (unimplemented)
 7:
 	-Unused
 8:
@@ -122,19 +122,8 @@ Things to add:
 	-Unused
 55:
 	-Unused
-56:
-	-Unused
-57:
-	-Unused
-58:
-	-Unused
-59:
-	-Unused
-60:
-	-Unused
-61:
-	-Unused
-62:
-	-Unused
-63:
-	-Unused
+56-63:
+	-Miner threat channels
+	Format:
+		Lower 12: position of enemy unit
+		Upper 4: 1+(round mod 15) that it was posted

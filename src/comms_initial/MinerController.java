@@ -16,13 +16,17 @@ public class MinerController extends Robot {
 	static final int MAX_MINER_DIST = 14;
 	static final int RESOURCE_SENSE_RANGE = 24;
 	static final int ROBOT_SENSE_RANGE = 24;
-	static final int MAX_LEAD_DEPOSITS = 15;
-	static final int MAX_ROBOTS = 13;
+	
+	static final int MAX_LEAD_DEPOSITS = 16;
+	static final int MAX_ROBOTS = 16;
 	static final int MAX_MINEABLE = 5;
 	
 	static final int UNROLLED_CENTER = 60;
 	/////
-	
+	//comms
+	static final int MIN_MESSAGE_NOOVERWRITE = 5;
+	private int messagePos = -1;
+	private int lastMessageTime = -1;
 	
 	private MapLocation dest = null;
 	private Util.RotationDirection bugDirection;
@@ -115,6 +119,8 @@ public class MinerController extends Robot {
 		}
 		// determine if there's robots we should avoid
 		RobotInfo[] robots = rc.senseNearbyRobots(ROBOT_SENSE_RANGE);
+		boolean unimportantEnemy = true;
+		MapLocation enemyLocation = null;
 		{
 			//Determine if there are robots we want to avoid
 			int i = robots.length;
@@ -172,6 +178,7 @@ public class MinerController extends Robot {
 							break;
 					}
 				} else {
+					//Enemy team
 					switch (robot.type) {
 						case SAGE:
 						case SOLDIER:
@@ -207,6 +214,18 @@ public class MinerController extends Robot {
 								runDirection = me.directionTo(robot.location).opposite();
 							default:
 							}
+							if (unimportantEnemy) {
+								unimportantEnemy=false;
+								enemyLocation = robot.location;
+							}
+							
+						}
+							break;
+						case ARCHON:
+						case LABORATORY:
+						{
+							enemyLocation = robot.location;
+							unimportantEnemy = false;
 						}
 							break;
 						case MINER:
@@ -223,12 +242,11 @@ public class MinerController extends Robot {
 							weights[index-11] += ENEMY_MINER_WEIGHT;
 							weights[index+11] += ENEMY_MINER_WEIGHT;
 						}
-							break;
-						case ARCHON:
 						case BUILDER:
-						case LABORATORY:
+							if (enemyLocation == null) {
+								enemyLocation = robot.location;
+							}
 						default:
-							break;
 					}
 				}
 			}
@@ -309,8 +327,47 @@ public class MinerController extends Robot {
 		
 		//rc.setIndicatorLine(rc.getLocation(), dest, 0,220,240);
 		
+		//Send messages about enemy locations
+		if (Clock.getBytecodesLeft() > 300) {
+			if (messagePos > 0) {
+				// check that our last message hasn't been overwritten
+				int readMessageTime = (rc.readSharedArray(messagePos) >> 12);
+				if (readMessageTime != lastMessageTime) {
+					messagePos = -1;
+				} else if (enemyLocation==null && 
+						readMessageTime == ((rc.getRoundNum()-1) % 15 + 1)) {
+					//clear if it's been around for too long
+					rc.writeSharedArray(messagePos, 0);
+					messagePos = -1;
+				}
+			}
+			if (enemyLocation != null) {
+				// If we don't have a slot we've claimed, look for the oldest overwritable message
+				if (messagePos < 0) {
+					int best_diff = -1;
+					for (int i=64; --i>=56;) {
+						int val = (rc.readSharedArray(i) >> 12);
+						if (val==0) { //prioritize empty slots
+							val = 100;
+						}
+						int diff = val - MIN_MESSAGE_NOOVERWRITE;
+						if (diff > best_diff) {
+							messagePos = i;
+							best_diff = diff;
+						}
+					}
+					if (best_diff < 0) messagePos = -1;  
+				}
+				
+				if (messagePos > 0) {
+					// Write the message
+					lastMessageTime = rc.getRoundNum() % 15 + 1;
+					rc.writeSharedArray(messagePos,
+							(lastMessageTime)<<12 
+							+ enemyLocation.y<<6 
+							+ enemyLocation.x);
+				}
+			}
+		}
 	}
-	
-	
-
 }

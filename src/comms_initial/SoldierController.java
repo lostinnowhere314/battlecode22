@@ -6,6 +6,7 @@ public class SoldierController extends Robot {
 
 	private static enum Mode {
 		ARCHON_TARGET,
+		COMMS_TARGET,
 		WANDER,
 		ATTACK
 	}
@@ -26,7 +27,7 @@ public class SoldierController extends Robot {
 	}
 
 	private void chooseStateRandom() {
-		mode = (rng.nextDouble()<0.2 ? Mode.WANDER : Mode.ARCHON_TARGET);
+		mode = (rng.nextDouble()<0.3 ? Mode.WANDER : Mode.ARCHON_TARGET);
 	}
 	
 	@Override
@@ -37,7 +38,27 @@ public class SoldierController extends Robot {
 		switch(mode) {
 		case WANDER:
 		{
-			// Choose new dest
+			// Check comms for new messages
+			int mostRecent = 16;
+			int recentIndex = -1;
+			for (int i=64; --i>=56;) {
+				int val = rc.readSharedArray(i);
+				if (val > 0) {
+					int time = (rc.getRoundNum()+1 - (val >> 12))%15;
+					if (time < mostRecent) {
+						mostRecent = time;
+						recentIndex = i;
+					}
+				}
+			}
+			if (recentIndex > 0) {
+				dest = Comms.getLocationFromComms(rc, recentIndex);
+				mode = Mode.COMMS_TARGET;
+			}
+		}
+		case COMMS_TARGET:
+		{	
+			// Choose new dest if needed
 			if (me.equals(dest) || dest == null) {
 				lastMode = mode;
 				chooseStateRandom();
@@ -192,6 +213,7 @@ public class SoldierController extends Robot {
 	        	//  is dangerous
 	        	switch(mode) {
 					case WANDER:
+					case COMMS_TARGET:
 			        	lastMode = mode;
 			        	mode = Mode.ATTACK;
 						break;
@@ -220,7 +242,7 @@ public class SoldierController extends Robot {
         } else {
         	if (mode == Mode.ATTACK) {
         		//this bit is kind of really garbage
-        		if (lastMode == Mode.ATTACK) {
+        		if (lastMode == Mode.ATTACK || lastMode == Mode.COMMS_TARGET) {
         			chooseStateRandom();
         		} else {
         			mode = lastMode;
