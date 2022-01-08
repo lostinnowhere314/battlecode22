@@ -1,6 +1,7 @@
 package comms_initial;
 
 import battlecode.common.*;
+import battlecode.instrumenter.inject.System;
 
 public class MinerController extends Robot {
 
@@ -361,11 +362,11 @@ public class MinerController extends Robot {
 				
 				if (messagePos > 0) {
 					// Write the message
-					lastMessageTime = rc.getRoundNum() % 15 + 1;
-					rc.writeSharedArray(messagePos,
-							(lastMessageTime)<<12 
-							+ enemyLocation.y<<6 
-							+ enemyLocation.x);
+					lastMessageTime = (rc.getRoundNum() % 15) + 1;
+					int message = (lastMessageTime<<12)
+							+ (enemyLocation.y<<6)
+							+ enemyLocation.x;
+					rc.writeSharedArray(messagePos, message);
 				}
 			}
 		}
