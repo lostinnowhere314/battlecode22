@@ -5,12 +5,14 @@ import battlecode.common.*;
 public class MinerController extends Robot {
 
 	// Constants for destination choosing
-	static final int MAX_LEAD_VAL = 40;
+	static final int MAX_LEAD_VAL = 20;
 	static final int GOLD_VAL = 15;
 	static final int FRIENDLY_MINER_WEIGHT1 = -100;
 	static final int FRIENDLY_MINER_WEIGHT2 = -50;
 	static final int FRIENDLY_MINER_WEIGHT3 = -15;
 	static final int ENEMY_WEIGHT = -500;
+	static final int ENEMY_MINER_WEIGHT = -30;
+	static final int ENEMY_MINER_MAX_DIST = 24;
 	
 	static final int MAX_MINER_DIST = 14;
 	static final int RESOURCE_SENSE_RANGE = 24;
@@ -187,18 +189,19 @@ public class MinerController extends Robot {
 						}
 							break;
 						case MINER:
-						/*{ //incentivize being annoying?
+						{
 							int x=robot.location.x-me.x;
 							int y=robot.location.y-me.y;
-							weights[5+x][4+y] += 5;
-							weights[5+x][6+y] += 5;
-							weights[4+x][5+y] += 5;
-							weights[6+x][5+y] += 5;
-							weights[5+x][3+y] += 5;
-							weights[5+x][7+y] += 5;
-							weights[3+x][5+y] += 5;
-							weights[7+x][5+y] += 5;
-						}*/
+							weights[4+x][4+y] += ENEMY_MINER_WEIGHT;
+							weights[5+x][4+y] += ENEMY_MINER_WEIGHT;
+							weights[6+x][4+y] += ENEMY_MINER_WEIGHT;
+							weights[4+x][5+y] += ENEMY_MINER_WEIGHT;
+							weights[5+x][5+y] += ENEMY_MINER_WEIGHT;
+							weights[6+x][5+y] += ENEMY_MINER_WEIGHT;
+							weights[4+x][6+y] += ENEMY_MINER_WEIGHT;
+							weights[5+x][6+y] += ENEMY_MINER_WEIGHT;
+							weights[6+x][6+y] += ENEMY_MINER_WEIGHT;
+						}
 							break;
 						case ARCHON:
 						case BUILDER:
@@ -232,11 +235,11 @@ public class MinerController extends Robot {
 				}
 			}
 			//threshold is adjustable
-			if (bestWeight > 2.5) {
+			if (bestWeight > 0.5) {
 				dest = bestLocation;
 			} else {
-				//maybe?
-				dest = Util.getRandomMapLocation(rc, rng);
+				//this needs states for it to not just wander randomly
+				//dest = Util.getRandomMapLocation(rc, rng);
 			}
 		default:
 		}
@@ -278,7 +281,7 @@ public class MinerController extends Robot {
 			}
 		}
 		
-		rc.setIndicatorLine(rc.getLocation(), dest, 0,220,240);
+		//rc.setIndicatorLine(rc.getLocation(), dest, 0,220,240);
 		
 	}
 	

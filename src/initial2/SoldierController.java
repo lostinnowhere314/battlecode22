@@ -43,11 +43,32 @@ public class SoldierController extends Robot {
 			if(rc.canSenseRobot(lastTargetID)) {
 				// If they are, try to maintain proper spacing
 				RobotInfo targetInfo = rc.senseRobot(lastTargetID);
+				int minDist, maxDist;
+				switch (targetInfo.type) {
+				case ARCHON:
+					minDist = 0;
+					maxDist = 2;
+					break;
+				case SAGE:
+				case SOLDIER:
+				case WATCHTOWER:
+					minDist = 6;
+					maxDist = 13;
+					break;
+				case BUILDER:
+				case MINER:
+				case LABORATORY:
+				default:
+					minDist = 0;
+					maxDist = 13;
+					break;
+				}
+				
 				int dist2 = me.distanceSquaredTo(targetInfo.location);
-				if (dist2 <= 5) {
+				if (dist2 < minDist) {
 					//Avoid being too close
 					Util.move_minrubble_direction(rc, me, me.directionTo(targetInfo.location).opposite(), bugDirection);
-				} else if (dist2 > 13) {
+				} else if (dist2 > maxDist) {
 					//But don't go too far away
 					Util.move_minrubble_direction(rc, me, me.directionTo(targetInfo.location), bugDirection);
 				}
@@ -136,6 +157,7 @@ public class SoldierController extends Robot {
         		mode = Mode.WANDER;
         		dest = Util.getRandomMapLocation(rc, rng);
         	}
+        	rc.setIndicatorLine(me, dest, 0,150,50);
         }
 		
         
