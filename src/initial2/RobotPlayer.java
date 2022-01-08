@@ -23,7 +23,7 @@ public strictfp class RobotPlayer {
 			} catch (GameActionException e) {
                 System.out.println(rc.getType() + " Exception");
                 e.printStackTrace();
-                rc.resign(); // for debugging
+                //rc.resign(); // for debugging
             } catch (Exception e) {
                 System.out.println(rc.getType() + " Exception");
                 e.printStackTrace();

@@ -27,15 +27,21 @@ public class ArchonController extends Robot {
 				}
 			}
 			
-			if (rc.getRoundNum() < 200 || (mapArea/rc.getRobotCount())>120) {
-				priorities[0] += 3;
+			if (priorities[0] < 1) {
+				priorities[0] = 20;
+			} else if (rc.getRoundNum() < 200 || (mapArea/rc.getRobotCount())>120) {
+				priorities[0] += 6;
 			} else if (rc.getRoundNum() < 500){
+				priorities[0] += 5;
+			} else {
 				priorities[0] += 1;
 			}
-			if (rc.getRoundNum() > 200) {
-				priorities[1] += 3;
+			if (priorities[1] < 1) {
+				priorities[1] = 50;
+			} else if (rc.getRoundNum() > 200) {
+				priorities[1] += 9;
 			} else {
-				priorities[1] += 1;
+				priorities[1] += 4;
 			}
 			
 			
