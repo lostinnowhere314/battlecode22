@@ -98,15 +98,17 @@ public class Util {
 		}
 		//then, we actually apply our heuristic
 		int current_r2 = me.distanceSquaredTo(dest);
-		int best_passability = 1000;
+		int best_score = 100000000;
 		Direction best_direction = Direction.CENTER;
-		for (int i=8;--i>0;) {
-			Direction dir = Util.directions[i];
+		//for (int i=8;--i>0;) {
+		for (Direction dir : Util.directions) {
+			//Direction dir = Util.directions[i];
 			MapLocation other = me.add(dir);
-			if (rc.canMove(dir) && other.distanceSquaredTo(dest) < current_r2) {
-				int pass = rc.senseRubble(other);
-				if (pass < best_passability) {
-					best_passability = pass;
+			int dist2 = other.distanceSquaredTo(dest);
+			if (dist2 < current_r2 && rc.canMove(dir)) {
+				int score = 10000*rc.senseRubble(other)+dist2;
+				if (score < best_score) {
+					best_score = score;
 					best_direction = dir;
 				}
 			}
@@ -134,10 +136,19 @@ public class Util {
 				if (pass < best_passability) {
 					best_passability = pass;
 					best_direction = targetDir;
-					switch(bugDirection) {
+					switch(i) {
+					case 2:
+						switch(bugDirection) {
+						case COUNTERCLOCKWISE:
+							best_passability--;
+						default:					
+						}
+					default:
+						switch(bugDirection) {
 						case CLOCKWISE:
 							best_passability++;
 						default:					
+						}
 					}
 				}
 			}
@@ -165,10 +176,19 @@ public class Util {
 				if (pass < best_passability) {
 					best_passability = pass;
 					best_direction = targetDir;
-					switch(bugDirection) {
+					switch(i) {
+					case 1:
+						switch(bugDirection) {
+						case COUNTERCLOCKWISE:
+							best_passability--;
+						default:					
+						}
+					default:
+						switch(bugDirection) {
 						case CLOCKWISE:
 							best_passability++;
 						default:					
+						}
 					}
 				}
 			}
