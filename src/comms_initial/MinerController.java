@@ -82,7 +82,7 @@ public class MinerController extends Robot {
 			}
 			for(; --i>=0;) {
 				MapLocation cl = lead_locs[i];
-				int amt = rc.senseLead(cl)-1;
+				int amt = rc.senseLead(cl);
 				if (amt > MAX_LEAD_VAL) {
 					amt = MAX_LEAD_VAL;
 				}
@@ -94,7 +94,13 @@ public class MinerController extends Robot {
 					weights[6+x][5+y] += amt;
 					weights[5+x][4+y] += amt;
 					weights[5+x][6+y] += amt;
+					//maybe too intensive
+					weights[4+x][4+y] += amt;
+					weights[6+x][6+y] += amt;
+					weights[6+x][4+y] += amt;
+					weights[4+x][6+y] += amt;
 					if (me.isAdjacentTo(cl)) {
+						amt--;
 						for (;--amt>=0&&adj_index>0;) {
 							adj_index--;
 							adj_resources[adj_index] = cl;

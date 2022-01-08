@@ -104,7 +104,7 @@ public class SoldierController extends Robot {
 				} else if (dist2 > maxDist) {
 					//But don't go too far away
 					Util.move_minrubble_direction(rc, me, me.directionTo(targetInfo.location), bugDirection);
-				} else {
+				} /*else { //Tends to make the robots spin around archons for some reason
 					// Maybe move around. I think this might be bad but I'm not sure
 					double r = rng.nextDouble();
 					
@@ -114,7 +114,7 @@ public class SoldierController extends Robot {
 									(r>0.9)?me.directionTo(targetInfo.location):me.directionTo(targetInfo.location).opposite(),
 									bugDirection));
 					}
-				}
+				}*/
 				
 			} else {
 				// If not, try moving towards them
