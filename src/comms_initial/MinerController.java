@@ -13,14 +13,16 @@ public class MinerController extends Robot {
 	static final int ENEMY_WEIGHT = -500;
 	static final int ENEMY_MINER_WEIGHT = -30;
 	static final int ENEMY_MINER_MAX_DIST = 24;
-	
 	static final int MAX_MINER_DIST = 14;
 	static final int RESOURCE_SENSE_RANGE = 24;
 	static final int ROBOT_SENSE_RANGE = 24;
 	static final int MAX_LEAD_DEPOSITS = 15;
 	static final int MAX_ROBOTS = 13;
-	
 	static final int MAX_MINEABLE = 5;
+	
+	static final int UNROLLED_CENTER = 60;
+	/////
+	
 	
 	private MapLocation dest = null;
 	private Util.RotationDirection bugDirection;
@@ -50,23 +52,25 @@ public class MinerController extends Robot {
 		boolean[] isGold = new boolean[MAX_MINEABLE];
 		int adj_index = MAX_MINEABLE;
 
-		double weights[][] = new double[11][11];
+		//Unrolled array of an 11x11 grid centered on the robot
+		double weights[] = new double[121];
 		//also should add diags really
 		for(int i = gold_locs.length; --i>=0;) {
 			MapLocation cl = gold_locs[i];
-			int x=cl.x-me.x;
-			int y=cl.y-me.y;
 			int amt = rc.senseGold(cl);
 			double wt = amt*GOLD_VAL;
-			weights[5+x][5+y] += wt;
-			weights[4+x][5+y] += wt;
-			weights[6+x][5+y] += wt;
-			weights[5+x][4+y] += wt;
-			weights[5+x][6+y] += wt;
-			weights[4+x][4+y] += wt;
-			weights[6+x][4+y] += wt;
-			weights[4+x][6+y] += wt;
-			weights[6+x][6+y] += wt;
+
+			int index = cl.x-me.x+11*(cl.y-me.y)+59;
+			
+			weights[index] += wt;
+			weights[index-11] += wt;
+			weights[index+11] += wt;
+			weights[++index] += wt;
+			weights[index-11] += wt;
+			weights[index+11] += wt;
+			weights[++index] += wt;
+			weights[index-11] += wt;
+			weights[index+11] += wt;
 			if (me.isAdjacentTo(cl)) {
 				for (;--amt>=0&&adj_index>0;) {
 					adj_index--;
@@ -87,18 +91,18 @@ public class MinerController extends Robot {
 					amt = MAX_LEAD_VAL;
 				}
 				if (amt > 0) {
-					int x=cl.x-me.x;
-					int y=cl.y-me.y;
-					weights[5+x][5+y] += amt;
-					weights[4+x][5+y] += amt;
-					weights[6+x][5+y] += amt;
-					weights[5+x][4+y] += amt;
-					weights[5+x][6+y] += amt;
-					//maybe too intensive
-					weights[4+x][4+y] += amt;
-					weights[6+x][6+y] += amt;
-					weights[6+x][4+y] += amt;
-					weights[4+x][6+y] += amt;
+					int index = cl.x-me.x+11*(cl.y-me.y)+59;
+
+					weights[index] += amt;
+					weights[index-11] += amt;
+					weights[index+11] += amt;
+					weights[++index] += amt;
+					weights[index-11] += amt;
+					weights[index+11] += amt;
+					weights[++index] += amt;
+					weights[index-11] += amt;
+					weights[index+11] += amt;
+					
 					if (me.isAdjacentTo(cl)) {
 						amt--;
 						for (;--amt>=0&&adj_index>0;) {
@@ -124,29 +128,38 @@ public class MinerController extends Robot {
 					switch (robot.type) {
 						case MINER:
 						if (me.isWithinDistanceSquared(robot.location, MAX_MINER_DIST)) {
-							int x=robot.location.x-me.x;
-							int y=robot.location.y-me.y;
-							weights[5+x][5+y] += FRIENDLY_MINER_WEIGHT1;
-							weights[4+x][4+y] += FRIENDLY_MINER_WEIGHT2;
-							weights[5+x][4+y] += FRIENDLY_MINER_WEIGHT2;
-							weights[6+x][4+y] += FRIENDLY_MINER_WEIGHT2;
-							weights[4+x][5+y] += FRIENDLY_MINER_WEIGHT2;
-							weights[6+x][5+y] += FRIENDLY_MINER_WEIGHT2;
-							weights[4+x][6+y] += FRIENDLY_MINER_WEIGHT2;
-							weights[5+x][6+y] += FRIENDLY_MINER_WEIGHT2;
-							weights[6+x][6+y] += FRIENDLY_MINER_WEIGHT2;
-							weights[4+x][3+y] += FRIENDLY_MINER_WEIGHT3;
-							weights[5+x][3+y] += FRIENDLY_MINER_WEIGHT3;
-							weights[6+x][3+y] += FRIENDLY_MINER_WEIGHT3;
-							weights[4+x][7+y] += FRIENDLY_MINER_WEIGHT3;
-							weights[5+x][7+y] += FRIENDLY_MINER_WEIGHT3;
-							weights[6+x][7+y] += FRIENDLY_MINER_WEIGHT3;
-							weights[3+x][4+y] += FRIENDLY_MINER_WEIGHT3;
-							weights[3+x][5+y] += FRIENDLY_MINER_WEIGHT3;
-							weights[3+x][6+y] += FRIENDLY_MINER_WEIGHT3;
-							weights[7+x][4+y] += FRIENDLY_MINER_WEIGHT3;
-							weights[7+x][5+y] += FRIENDLY_MINER_WEIGHT3;
-							weights[7+x][6+y] += FRIENDLY_MINER_WEIGHT3;
+							int index = robot.location.x-me.x+11*(robot.location.y-me.y)+58;
+							
+							// x-2
+							weights[index] += FRIENDLY_MINER_WEIGHT3;
+							weights[index-11] += FRIENDLY_MINER_WEIGHT3;
+							weights[index+11] += FRIENDLY_MINER_WEIGHT3;
+							
+							// x-1
+							weights[++index] += FRIENDLY_MINER_WEIGHT2;
+							weights[index-11] += FRIENDLY_MINER_WEIGHT2;
+							weights[index+11] += FRIENDLY_MINER_WEIGHT2;
+							weights[index-22] += FRIENDLY_MINER_WEIGHT3;
+							weights[index+22] += FRIENDLY_MINER_WEIGHT3;
+
+							// x
+							weights[++index] += FRIENDLY_MINER_WEIGHT1;
+							weights[index-11] += FRIENDLY_MINER_WEIGHT2;
+							weights[index+11] += FRIENDLY_MINER_WEIGHT2;
+							weights[index-22] += FRIENDLY_MINER_WEIGHT3;
+							weights[index+22] += FRIENDLY_MINER_WEIGHT3;
+
+							// x+1
+							weights[++index] += FRIENDLY_MINER_WEIGHT2;
+							weights[index-11] += FRIENDLY_MINER_WEIGHT2;
+							weights[index+11] += FRIENDLY_MINER_WEIGHT2;
+							weights[index-22] += FRIENDLY_MINER_WEIGHT3;
+							weights[index+22] += FRIENDLY_MINER_WEIGHT3;
+							
+							// x+2
+							weights[++index] += FRIENDLY_MINER_WEIGHT3;
+							weights[index-11] += FRIENDLY_MINER_WEIGHT3;
+							weights[index+11] += FRIENDLY_MINER_WEIGHT3;
 						}
 							break;
 						case ARCHON:
@@ -198,17 +211,17 @@ public class MinerController extends Robot {
 							break;
 						case MINER:
 						{
-							int x=robot.location.x-me.x;
-							int y=robot.location.y-me.y;
-							weights[4+x][4+y] += ENEMY_MINER_WEIGHT;
-							weights[5+x][4+y] += ENEMY_MINER_WEIGHT;
-							weights[6+x][4+y] += ENEMY_MINER_WEIGHT;
-							weights[4+x][5+y] += ENEMY_MINER_WEIGHT;
-							weights[5+x][5+y] += ENEMY_MINER_WEIGHT;
-							weights[6+x][5+y] += ENEMY_MINER_WEIGHT;
-							weights[4+x][6+y] += ENEMY_MINER_WEIGHT;
-							weights[5+x][6+y] += ENEMY_MINER_WEIGHT;
-							weights[6+x][6+y] += ENEMY_MINER_WEIGHT;
+							int index = robot.location.x-me.x+11*(robot.location.y-me.y)+59;
+
+							weights[index] += ENEMY_MINER_WEIGHT;
+							weights[index-11] += ENEMY_MINER_WEIGHT;
+							weights[index+11] += ENEMY_MINER_WEIGHT;
+							weights[++index] += ENEMY_MINER_WEIGHT;
+							weights[index-11] += ENEMY_MINER_WEIGHT;
+							weights[index+11] += ENEMY_MINER_WEIGHT;
+							weights[++index] += ENEMY_MINER_WEIGHT;
+							weights[index-11] += ENEMY_MINER_WEIGHT;
+							weights[index+11] += ENEMY_MINER_WEIGHT;
 						}
 							break;
 						case ARCHON:
@@ -226,18 +239,23 @@ public class MinerController extends Robot {
 		case CENTER:
 			MapLocation bestLocation = me;
 			double bestWeight = 0;
-			for (int i=9;--i>=0;) {
-				for (int j=9;--j>=0;) {
-					double w=weights[i][j];
-					// Figure out if we should check rubble
-					if(w > bestWeight) {
-						MapLocation location = new MapLocation(me.x+i-6, me.y+j-6);
-						if (rc.canSenseLocation(location)) {
-							w /= (1+0.5*rc.senseRubble(location));
-							if (w > bestWeight) {
-								bestWeight = w;
-								bestLocation = location;
-							}
+			for (int i=109;--i>=11;) {
+				if (i%11==0) { //skip the left- and right-most columns
+					i--;
+					continue;
+				}
+				
+				double w=weights[i];
+				// Figure out if we should check rubble
+				if(w > bestWeight) {
+					int x = i%11;
+					int y = i / 11;
+					MapLocation location = new MapLocation(me.x+x-6, me.y+y-6);
+					if (rc.canSenseLocation(location)) {
+						w /= (1+0.5*rc.senseRubble(location));
+						if (w > bestWeight) {
+							bestWeight = w;
+							bestLocation = location;
 						}
 					}
 				}
