@@ -10,6 +10,8 @@ public class ArchonController extends Robot {
 	private int archonOrder;
 	private int totalArchons;
 	
+	boolean enemiesSpotted = false;
+	
 	public ArchonController(RobotController rc) throws GameActionException {
 		super(rc);
 		mapArea = rc.getMapHeight()*rc.getMapWidth();
@@ -19,16 +21,98 @@ public class ArchonController extends Robot {
 		while (rc.readSharedArray(archonOrder)>0) {
 			archonOrder++;
 		}
-		rc.writeSharedArray(archonOrder, Comms.compressLocation(rc.getLocation())|32768);
+		rc.writeSharedArray(archonOrder, Comms.compressLocation(rc.getLocation())|4096);
 		totalArchons = rc.getArchonCount();
 	}
 	
 	@Override
 	public void run(RobotController rc) throws GameActionException {
+		
+		// Comms //
 		if (rc.getRoundNum()==2) {
-			//Write total number of archons
-			int val = rc.readSharedArray(1);
-			rc.writeSharedArray(1, val & 4095 + (totalArchons-1)*16384);
+			// Clean up
+			switch (archonOrder) {
+			case 0:
+				{
+					//Write which archons are alive
+					int archonAliveVal;
+					switch(totalArchons) {
+					case 1:
+						archonAliveVal = 4096;
+						break;
+					case 2:
+						archonAliveVal = 12288;
+						break;
+					case 3:
+						archonAliveVal = 28672;
+						break;
+					case 0:
+					default:
+						archonAliveVal = 61440;
+						break;
+					}
+					rc.writeSharedArray(0, rc.readSharedArray(0) | archonAliveVal);
+					
+					switch (totalArchons) {
+					case 3:
+						// Alive enemy archons
+						rc.writeSharedArray(3, archonAliveVal);
+					case 2:
+					case 1:
+						rc.writeSharedArray(1, (totalArchons-1)*16384);
+					default:
+					}
+				}
+				break;
+			case 1:
+				{
+					//Write total number of archons
+					int val = rc.readSharedArray(1);
+					rc.writeSharedArray(1, val & 4095 + (totalArchons-1)*16384);
+				}
+				break;
+			case 2:
+				{
+					rc.writeSharedArray(archonOrder, rc.readSharedArray(archonOrder) & 4095);
+				}
+				break;
+			case 3:
+				{
+					//Write which enemy archons are alive
+					int archonAliveVal;
+					switch(totalArchons) {
+					case 1:
+						archonAliveVal = 4096;
+						break;
+					case 2:
+						archonAliveVal = 12288;
+						break;
+					case 3:
+						archonAliveVal = 28672;
+						break;
+					case 0:
+					default:
+						archonAliveVal = 61440;
+						break;
+					}
+					rc.writeSharedArray(3, rc.readSharedArray(3) | archonAliveVal);
+				}
+				break;
+			default:
+			}
+		}
+		// Miner counts
+		Comms.cleanMinerCount(rc);
+		@SuppressWarnings("unused")
+		int minerCount = Comms.getMinerCount(rc);
+		// Check for spotted enemies
+		if (!enemiesSpotted) {
+			for (int i=64; --i>=56;) {
+				if (rc.readSharedArray(i) != 0) {
+					enemiesSpotted = true;
+					break;
+				}
+			}
 		}
 		
 		rc.setIndicatorString(Integer.toString(archonOrder)+"; "+priorities.toString());
@@ -37,12 +121,13 @@ public class ArchonController extends Robot {
 			// Determine priorities
 			int nArchons = rc.getArchonCount();
 			if (rc.getRoundNum() > 15 && nArchons>1
-					&& (rc.getTeamLeadAmount(rc.getTeam()) < 35*(nArchons-archonOrder))) {
+					&& (rc.getTeamLeadAmount(rc.getTeam()) < 44*(nArchons-archonOrder))) {
 				if (rng.nextDouble()>2/(nArchons+1)) {
 					return; //// Hypothetically will help distribute units more evenly if lots of archons
 				}
 			}
-			
+
+			// This really needs to be reworked but idk what exactly to do otherwise
 			if (priorities[0] < 1) {
 				priorities[0] = 20;
 			} else if (rc.getRoundNum() < 200 || (mapArea/rc.getRobotCount())>120) {

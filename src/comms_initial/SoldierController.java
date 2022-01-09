@@ -1,9 +1,11 @@
 package comms_initial;
 
 import battlecode.common.*;
+import comms_initial.Util.MapSymmetryType;
 
 public class SoldierController extends Robot {
 
+	
 	private static enum Mode {
 		ARCHON_TARGET,
 		COMMS_TARGET,
@@ -14,6 +16,7 @@ public class SoldierController extends Robot {
 	private MapLocation dest = null;
 	private Util.RotationDirection bugDirection;
 	private Mode mode = Mode.ARCHON_TARGET;
+	private MapSymmetryType symType = MapSymmetryType.UNKNOWN;
 	private Mode lastMode = Mode.WANDER;
 	private int lastTargetID = -1;
 	private MapLocation lastTargetLocation = null;
@@ -64,7 +67,11 @@ public class SoldierController extends Robot {
 				chooseStateRandom();
 		        switch(mode) {
 			        case ARCHON_TARGET:
-			        	dest = Util.getRandomEnemyArchonLocation(rc, rng);
+			        {
+			        	Util.ArchonTarget target = Util.getRandomEnemyArchonLocation(rc, rng);
+			        	dest = target.location;
+			        	symType = target.symmetry;
+			        }
 			        case WANDER:
 			        	dest = Util.getRandomMapLocation(rc, rng);
 			    	default:
@@ -77,11 +84,33 @@ public class SoldierController extends Robot {
 		{
 			// Choose potential archon to target
 			if (dest == null || me.isWithinDistanceSquared(dest, 14)) {
+				if (symType != MapSymmetryType.UNKNOWN) {
+					if (Comms.readSymmetryType(rc) == MapSymmetryType.UNKNOWN) {
+						//Test if there's an archon at our destination
+						if (rc.canSenseLocation(dest)) {
+							RobotInfo robot = rc.senseRobotAtLocation(dest);
+							if (robot != null 
+									&& robot.type == RobotType.ARCHON
+									&& rc.getTeam().opponent().equals(robot.team)) {
+								// then we "know" the symmetry type
+								Comms.writeSymmetryType(rc, symType);
+							} else {
+								// then we "know" it's not that symmetry
+								Comms.writeNotSymmetryType(rc, symType);
+							}
+						}
+					}
+				}
+				
 				lastMode = mode;
 				chooseStateRandom();
 		        switch(mode) {
 			        case ARCHON_TARGET:
-			        	dest = Util.getRandomEnemyArchonLocation(rc, rng);
+			        {
+			        	Util.ArchonTarget target = Util.getRandomEnemyArchonLocation(rc, rng);
+			        	dest = target.location;
+			        	symType = target.symmetry;
+			        }
 			        case WANDER:
 			        	dest = Util.getRandomMapLocation(rc, rng);
 			    	default:
@@ -124,7 +153,7 @@ public class SoldierController extends Robot {
 					Util.move_minrubble_direction(rc, me, me.directionTo(targetInfo.location).opposite(), bugDirection);
 				} else if (dist2 > maxDist) {
 					//But don't go too far away
-					Util.move_minrubble_direction(rc, me, me.directionTo(targetInfo.location), bugDirection);
+					Util.move_minrubble(rc, me, targetInfo.location);
 				} /*else { //Tends to make the robots spin around archons for some reason
 					// Maybe move around. I think this might be bad but I'm not sure
 					double r = rng.nextDouble();
@@ -166,7 +195,7 @@ public class SoldierController extends Robot {
 	        	switch (currentEnemy.type) {
 				case ARCHON:
 					// base 1200, max hp 1200
-					currentScore = 1400 - currentEnemy.health/6.;
+					currentScore = 1200;
 					break;
 				case BUILDER:
 					// 
@@ -179,8 +208,8 @@ public class SoldierController extends Robot {
 					currentScore = 1050 - currentEnemy.health;
 					break;
 				case SAGE:
-					// 1200; maxhp 100
-					currentScore = 1300 - currentEnemy.health;
+					// 1250; maxhp 100
+					currentScore = 1350 - currentEnemy.health;
 					break;
 				case SOLDIER:
 					// 1201; maxhp 50

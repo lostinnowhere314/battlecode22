@@ -16,21 +16,26 @@ Things to add:
 		3 - rotation
 2:
 	Lower 12: Archon 2 pos
+	Upper 3 bits: disproven symmetry types
+		13 - h reflect
+		14 - v reflect
+		15 - rotation
 3:
 	Lower 12: Archon 3 pos
+	Upper 4: which enemy archons are still alive (unimplemented)
 4:
-	bit 15 - enemy spotted? (unimplemented)
+	Miner ct
 5:
-	Miner ct (unimplemented)
+	Miner ct
 6:
 	Solder ct (unimplemented)
 7:
-	-Unused
+	Solder ct (unimplemented)
 8:
 	-Unused
 9:
 	-Unused
-10: (cts probably until here)
+10: (cts probably until here at least)
 	-Unused
 11:
 	-Unused

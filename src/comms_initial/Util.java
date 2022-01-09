@@ -6,6 +6,15 @@ import battlecode.common.*;
 
 public class Util {
 	
+	public static class ArchonTarget {
+		public MapSymmetryType symmetry;
+		public MapLocation location;
+		public ArchonTarget(MapSymmetryType s, MapLocation l) {
+			symmetry = s;
+			location = l;
+		}
+	};
+	
 	public static enum MapSymmetryType {
 		HORIZ_REFLECT,
 		VERT_REFLECT,
@@ -13,7 +22,7 @@ public class Util {
 		UNKNOWN
 	};
 	
-	public static MapSymmetryType selectRandomSymmetry(RobotController rc, Random rng) {
+	public static MapSymmetryType selectRandomSymmetry(Random rng) {
 		double r = rng.nextDouble();
 		if (r < 0.3) {
 			return MapSymmetryType.ROTATION;
@@ -23,13 +32,27 @@ public class Util {
 		return MapSymmetryType.VERT_REFLECT;
 	}
 	
-	public static MapLocation getRandomEnemyArchonLocation(RobotController rc, Random rng) throws GameActionException {
+	public static MapSymmetryType selectRandomPossibleSymmetry(RobotController rc, Random rng) throws GameActionException {
+		switch (Comms.readNotSymmetryType(rc)) {
+		case 1: return rng.nextBoolean() ? MapSymmetryType.VERT_REFLECT : MapSymmetryType.ROTATION;
+		case 2: return rng.nextBoolean() ? MapSymmetryType.HORIZ_REFLECT : MapSymmetryType.ROTATION;
+		case 3: return MapSymmetryType.ROTATION;
+		case 4: return rng.nextBoolean() ? MapSymmetryType.HORIZ_REFLECT : MapSymmetryType.VERT_REFLECT;
+		case 5: return MapSymmetryType.VERT_REFLECT;
+		case 6: return MapSymmetryType.HORIZ_REFLECT;
+		default:
+			return selectRandomSymmetry(rng);
+		}
+	}
+	
+	public static ArchonTarget getRandomEnemyArchonLocation(RobotController rc, Random rng) throws GameActionException {
 		MapSymmetryType sym = Comms.readSymmetryType(rc);
 		if (sym == MapSymmetryType.UNKNOWN) {
-			sym = selectRandomSymmetry(rc, rng);
+			sym = selectRandomPossibleSymmetry(rc, rng);
 		}
 		int which = rng.nextInt(Comms.getStoredArchonCount(rc));
-		return getSymmetricLocation(rc, Comms.getLocationFromComms(rc, which), sym);
+		return new ArchonTarget(sym,
+				getSymmetricLocation(rc, Comms.getLocationFromComms(rc, which), sym));
 	}
 	
 	public static MapLocation getSymmetricLocation(RobotController rc, MapLocation loc, MapSymmetryType sym) {
