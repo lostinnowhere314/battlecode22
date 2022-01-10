@@ -63,6 +63,57 @@ public class Util {
 				getSymmetricLocation(rc, Comms.getLocationFromComms(rc, which), sym));
 	}
 	
+	/*
+	 * Warning: this might be somewhat of an expensive method
+	 */
+	public static ArchonTarget getNearestEnemyArchonLocation(RobotController rc, Random rng) throws GameActionException {
+		MapLocation me = rc.getLocation();
+		int teamArchonCount = Comms.getStoredArchonCount(rc);
+		
+		int nearestDistance = 256;
+		MapLocation bestLocation = null;
+		MapSymmetryType bestSymType = MapSymmetryType.UNKNOWN;
+		
+		MapSymmetryType symType = Comms.readSymmetryType(rc);
+		
+		if (symType == MapSymmetryType.UNKNOWN) {
+			MapLocation[] archonLocs = new MapLocation[teamArchonCount];
+
+			for (int i = teamArchonCount; --i>=0;) {
+				archonLocs[i] = Comms.getLocationFromComms(rc, i);
+			}
+			for (MapSymmetryType symType2 : Util.SymmetryTypes) {
+				if (Comms.readNotSymmetryType(rc, symType2)) {
+					for (int i = teamArchonCount; --i>=0;) {
+						MapLocation otherArchon = Util.getSymmetricLocation(rc,
+								archonLocs[i], symType2);
+						
+						int dist2 = me.distanceSquaredTo(otherArchon);
+						if (dist2 < nearestDistance) {
+							nearestDistance = dist2;
+							bestLocation = otherArchon;
+							bestSymType = symType2;
+						}
+					}
+				}
+			}
+		} else {
+			bestSymType = symType;
+			for (int i = teamArchonCount; --i>=0;) {
+				MapLocation otherArchon = Util.getSymmetricLocation(rc,
+						Comms.getLocationFromComms(rc, i), symType);
+				
+				int dist2 = me.distanceSquaredTo(otherArchon);
+				if (dist2 < nearestDistance) {
+					nearestDistance = dist2;
+					bestLocation = otherArchon;
+				}
+			}
+		}
+		return new ArchonTarget(bestSymType, bestLocation);
+	}
+	
+	
 	public static MapLocation getSymmetricLocation(RobotController rc, MapLocation loc, MapSymmetryType sym) {
 		switch(sym) {
 		case HORIZ_REFLECT:
