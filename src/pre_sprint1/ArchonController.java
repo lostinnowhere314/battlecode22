@@ -1,21 +1,21 @@
 package pre_sprint1;
 
 import battlecode.common.*;
+import pre_sprint1.Util.MapSymmetryType;
 
 public class ArchonController extends Robot {
 
-	private final int N_CLASSES = 7;
-	private int[] priorities = new int[N_CLASSES];
 	private double mapArea;
 	private int archonOrder;
 	private int totalArchons;
+	private boolean isPrimaryArchon = false;
+	private double nearestEnemyArchonDist = 256;
 	
 	boolean enemiesSpotted = false;
 	
 	public ArchonController(RobotController rc) throws GameActionException {
 		super(rc);
 		mapArea = rc.getMapHeight()*rc.getMapWidth();
-		priorities[0] = 200;
 		
 		archonOrder = 0;
 		while (rc.readSharedArray(archonOrder)>0) {
@@ -23,10 +23,15 @@ public class ArchonController extends Robot {
 		}
 		rc.writeSharedArray(archonOrder, Comms.compressLocation(rc.getLocation())|4096);
 		totalArchons = rc.getArchonCount();
+		if (archonOrder == 0) {
+			isPrimaryArchon = true;
+		}
 	}
 	
 	@Override
 	public void run(RobotController rc) throws GameActionException {
+		
+		MapLocation me = rc.getLocation();
 		
 		// Comms //
 		if (rc.getRoundNum()==2) {
@@ -100,11 +105,72 @@ public class ArchonController extends Robot {
 				break;
 			default:
 			}
+			
+			// Determine nearest possible enemy archon
+			int nearestDistance = 256;
+			
+			MapSymmetryType symType = Comms.readSymmetryType(rc);
+			
+			if (symType == MapSymmetryType.UNKNOWN) {
+				OUTER_LOOP:for (int j = 3; --j>=0;) {
+					symType = Util.SymmetryTypes[j];
+					if (Comms.readNotSymmetryType(rc, symType)) {
+						for (int i = totalArchons; --i>=0;) {
+							// way to make more efficient: take these outside the main loop
+							MapLocation ourArchon = Comms.getLocationFromComms(rc, i);
+							MapLocation other = Util.getSymmetricLocation(rc, ourArchon, symType);
+							
+							//See if we can just check whether the square is there
+							if (rc.canSenseLocation(other)) {
+								RobotInfo robot = rc.senseRobotAtLocation(other);
+								if (robot != null && robot.getType() == RobotType.ARCHON
+											&& !robot.getTeam().equals(rc.getTeam())) {
+									//We then know that there is an archon there, so we "know" the symmetry type
+									Comms.writeSymmetryType(rc, symType);
+									break OUTER_LOOP;
+								} else {
+									// No robot there, so we have disproven that symmetry type
+									Comms.writeNotSymmetryType(rc, symType);
+									continue OUTER_LOOP;
+								}
+							}
+								
+							int dist2 = me.distanceSquaredTo(other);
+							if (dist2 < nearestDistance) {
+								nearestDistance = dist2;
+							}
+						}
+					}
+				}
+			}
+			symType = Comms.readSymmetryType(rc);
+			if (symType != MapSymmetryType.UNKNOWN) {
+				nearestDistance = 256;
+				for (int i = totalArchons; --i>=0;) {
+					// way to make more efficient: take these outside the main loop
+					MapLocation ourArchon = Comms.getLocationFromComms(rc, i);
+					MapLocation other = Util.getSymmetricLocation(rc, ourArchon, symType);
+					
+					int dist2 = me.distanceSquaredTo(other);
+					if (dist2 < nearestDistance) {
+						nearestDistance = dist2;
+					}
+				}
+			}
+			nearestEnemyArchonDist = Math.sqrt(nearestDistance);
 		}
+		
+		// TODO check if any archons have been destroyed, re-figure out who's in charge
+		
 		// Miner counts
 		Comms.cleanMinerCount(rc);
+		Comms.cleanSoldierCount(rc);
+		
 		@SuppressWarnings("unused")
 		int minerCount = Comms.getMinerCount(rc);
+		@SuppressWarnings("unused")
+		int soldierCount = Comms.getSoldierCount(rc);
+		
 		// Check for spotted enemies
 		if (!enemiesSpotted) {
 			for (int i=64; --i>=56;) {
@@ -115,11 +181,12 @@ public class ArchonController extends Robot {
 			}
 		}
 		
-		rc.setIndicatorString(Integer.toString(archonOrder)+"; "+priorities.toString());
+		rc.setIndicatorString(Integer.toString(archonOrder));
 		
 		if (rc.isActionReady()) {
 			// Determine priorities
-			int nArchons = rc.getArchonCount();
+			// Old code
+			/*int nArchons = rc.getArchonCount();
 			if (rc.getRoundNum() > 15 && nArchons>1
 					&& (rc.getTeamLeadAmount(rc.getTeam()) < 44*(nArchons-archonOrder))) {
 				if (rng.nextDouble()>2/(nArchons+1)) {
@@ -143,37 +210,90 @@ public class ArchonController extends Robot {
 				priorities[1] += 9;
 			} else {
 				priorities[1] += 4;
-			}
+			}*/
+			RobotType buildType = null;
+			double[] weights = new double[3];
+
+			int teamLeadAmt = rc.getTeamLeadAmount(rc.getTeam());
+			int teamGoldAmt = rc.getTeamGoldAmount(rc.getTeam());
 			
-			
-			//Find the maximum
-			int maxIndex = 0;
-			int maxPriority = 0;
-			for (int i=N_CLASSES; --i>=0;) {
-				if (priorities[i]>maxPriority) {
-					maxPriority = priorities[i];
-					maxIndex = i;
+			// Decide if we can/want to build a sage
+			int numCanBuildSages = teamGoldAmt / 50;
+			if (numCanBuildSages > 0) {
+				if (numCanBuildSages >= totalArchons-archonOrder) {
+					// buildType = RobotType.SAGE;
+				} else if (rng.nextInt(totalArchons-archonOrder)<numCanBuildSages ) {
+					// buildType = RobotType.SAGE;
 				}
 			}
-			
-			if (maxPriority > 0) {
-				switch(maxIndex) {
-				case 0:
-				{
-					if (tryBuildRobot(rc, RobotType.MINER)) {
-						priorities[0] -= 10;
+		
+			if (buildType == null) {
+				if ((rc.getRoundNum() < 2.2*nearestEnemyArchonDist
+						&& rc.getRoundNum() < 50
+						)|| !enemiesSpotted) {
+					weights[0] = 1;
+				} else if (rc.getRoundNum() < 500){
+					//TODO calcualte other weights
+					double soldierMinerRatio = Math.sqrt(rc.getRoundNum());
+					double currentRatio = (soldierCount+10) / minerCount;
+					
+					weights[0] = currentRatio;
+					if (teamLeadAmt > 60*(totalArchons-archonOrder)) {
+						weights[1] = soldierMinerRatio;
+					}
+					
+				} else {
+					if (minerCount*16 < mapArea) { // figure out desired miner ct
+						weights[0] = 5;
+					}
+					weights[1] = 5;
+				}
+				
+				
+				//Find the chosen one
+				double cumWeight = 0;
+				
+				for (int i = 3; --i>=0;) {
+					cumWeight += weights[i];
+				}
+				
+				// Determine if we (probabilistically) have enough lead to do everything
+				//    we want to
+				double neededLead = weights[0] * RobotType.MINER.buildCostLead
+						+weights[1] * RobotType.SOLDIER.buildCostLead
+						+weights[2] * RobotType.BUILDER.buildCostLead;
+				neededLead *= (totalArchons-archonOrder)/cumWeight;
+				
+				rc.setIndicatorString(String.format("%.1f, (%.2f,%.2f,%.2f)",
+						neededLead, weights[0]/cumWeight,
+						weights[1]/cumWeight, weights[2]/cumWeight));
+				
+				if (neededLead > teamLeadAmt) {
+					if (rng.nextDouble()*neededLead > teamLeadAmt) {
+						return;
 					}
 				}
-				case 1:
-				{
-					if (tryBuildRobot(rc, RobotType.SOLDIER)) {
-						priorities[1] -= 10;
+				
+				double chosenWeight = rng.nextDouble() * cumWeight;
+				
+				chosenWeight -= weights[0];
+				if (chosenWeight < 0) {
+					buildType = RobotType.MINER;
+				} else {
+					chosenWeight -= weights[1];
+					if (chosenWeight < 0) {
+						buildType = RobotType.SOLDIER;
+					} else {
+						chosenWeight -= weights[2];
+						if (chosenWeight < 0) {
+							// buildType = RobotType.BUILDER;
+						}
 					}
 				}
-					break;
-				default:
-					break;
-				}
+			}
+			
+			if (buildType != null) {
+				tryBuildRobot(rc, buildType);
 			}
 		}
 	}
