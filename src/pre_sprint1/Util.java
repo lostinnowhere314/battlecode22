@@ -22,6 +22,11 @@ public class Util {
 		ROTATION,
 		UNKNOWN
 	};
+	public static MapSymmetryType[] SymmetryTypes = {
+			MapSymmetryType.HORIZ_REFLECT,
+			MapSymmetryType.VERT_REFLECT,
+			MapSymmetryType.ROTATION,
+	};
 	
 	public static MapSymmetryType selectRandomSymmetry(Random rng) {
 		double r = rng.nextDouble();
@@ -45,6 +50,8 @@ public class Util {
 			return selectRandomSymmetry(rng);
 		}
 	}
+	
+	
 	
 	public static ArchonTarget getRandomEnemyArchonLocation(RobotController rc, Random rng) throws GameActionException {
 		MapSymmetryType sym = Comms.readSymmetryType(rc);

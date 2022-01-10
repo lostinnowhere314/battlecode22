@@ -4,9 +4,11 @@ import battlecode.common.*;
 import pre_sprint1.Util.MapSymmetryType;
 
 public class Comms {
-	
+
 	public static final int MINER_CT_CYCLE = 3;
 	public static final int MINER_FULL_CYCLE = 2*MINER_CT_CYCLE;
+	public static final int SOLDIER_CT_CYCLE = 1;
+	public static final int SOLDIER_FULL_CYCLE = 2*MINER_CT_CYCLE;
 
 	public static int getCurrentMinerRegister(RobotController rc) {
 		return ((rc.getRoundNum() % MINER_FULL_CYCLE) < MINER_CT_CYCLE) ? 5 : 4;
@@ -38,6 +40,39 @@ public class Comms {
 		}
 	}
 	
+
+	/*
+	 * Soldier counting
+	 * Accuracy is guaranteed to within MINER_CT_CYCLE turns
+	 */
+
+	public static int getCurrentSoldierRegister(RobotController rc) {
+		return ((rc.getRoundNum() % SOLDIER_FULL_CYCLE) < SOLDIER_CT_CYCLE) ? 8 : 7;
+	}
+
+	public static int getInactiveSoldierRegister(RobotController rc) {
+		return ((rc.getRoundNum() % SOLDIER_FULL_CYCLE) < SOLDIER_CT_CYCLE) ? 7 : 8;
+	}
+	
+	public static int getSoldierCount(RobotController rc) throws GameActionException {
+		return rc.readSharedArray(getCurrentSoldierRegister(rc));
+	}
+	
+	public static void incrementSoldierCount(RobotController rc) throws GameActionException {
+		int register = getInactiveSoldierRegister(rc);
+		rc.writeSharedArray(register, 1+rc.readSharedArray(register));
+	}
+	
+	public static void cleanSoldierCount(RobotController rc) throws GameActionException {
+		//Cleans the inactive count bank if needed
+		//if ((rc.getRoundNum() % SOLDIER_CT_CYCLE)==0) {
+			int register = getInactiveSoldierRegister(rc);
+			if (rc.readSharedArray(register) != 0) {
+				rc.writeSharedArray(register, 0);
+			}
+		//}
+	}
+	
 	// Stores x,y location in lower bits of integer
 	public static MapLocation getLocationFromComms(RobotController rc, int i) throws GameActionException {
 		int val = rc.readSharedArray(i);
@@ -48,7 +83,7 @@ public class Comms {
 		return (rc.readSharedArray(1)>>14)+1;
 	}
 	
-	public static Util.MapSymmetryType readSymmetryType(RobotController rc) throws GameActionException {
+	public static MapSymmetryType readSymmetryType(RobotController rc) throws GameActionException {
 		switch (rc.readSharedArray(1) & 12288) { //bits 12,13
 		case 4096:
 			return MapSymmetryType.HORIZ_REFLECT;
@@ -96,8 +131,30 @@ public class Comms {
 		case UNKNOWN:
 		default:
 			return;
+		}
+		rc.writeSharedArray(2, value | rc.readSharedArray(2));
 	}
-		rc.writeSharedArray(1, value | rc.readSharedArray(2));
+	
+	/*
+	 * Returns true if the symmetry type has not been disproven
+	 */
+	public static boolean readNotSymmetryType(RobotController rc, MapSymmetryType sym) throws GameActionException {
+		int value;
+		switch(sym) {
+		case HORIZ_REFLECT:
+			value = 4096;
+			break;
+		case VERT_REFLECT:
+			value = 8192;
+			break;
+		case ROTATION:
+			value = 16384;
+			break;
+		case UNKNOWN:
+		default:
+			return false;
+		}
+		return ((rc.readSharedArray(2) & value)==0);
 	}
 	
 	//Returns the three bits; the number will be in the range 0-7
