@@ -40,9 +40,12 @@ public class SoldierController extends Robot {
 	
 	@Override
 	public void run(RobotController rc) throws GameActionException {
+		// Keep soldier count incremented
+        Comms.incrementSoldierCount(rc);
+        
+        
         MapLocation me = rc.getLocation();
-        
-        
+       
 		switch(mode) {
 		case WANDER:
 		{
@@ -73,7 +76,7 @@ public class SoldierController extends Robot {
 		        switch(mode) {
 			        case ARCHON_TARGET:
 			        {
-			        	Util.ArchonTarget target = Util.getRandomEnemyArchonLocation(rc, rng);
+			        	Util.ArchonTarget target = Util.getNearestEnemyArchonLocation(rc, rng);
 			        	dest = target.location;
 			        	symType = target.symmetry;
 			        }
@@ -112,7 +115,7 @@ public class SoldierController extends Robot {
 		        switch(mode) {
 			        case ARCHON_TARGET:
 			        {
-			        	Util.ArchonTarget target = Util.getRandomEnemyArchonLocation(rc, rng);
+			        	Util.ArchonTarget target = Util.getNearestEnemyArchonLocation(rc, rng);
 			        	dest = target.location;
 			        	symType = target.symmetry;
 			        }
@@ -161,7 +164,7 @@ public class SoldierController extends Robot {
 				int dist2 = me.distanceSquaredTo(targetInfo.location);
 				if (dist2 < minDist) {
 					//Avoid being too close
-					Util.move_minrubble_direction(rc, me, me.directionTo(targetInfo.location).opposite(), bugDirection);
+					Util.move_minrubble_direction_strict(rc, me, me.directionTo(targetInfo.location).opposite(), bugDirection);
 				} else if (dist2 > maxDist) {
 					//But don't go too far away
 					Util.move_minrubble(rc, me, targetInfo.location);

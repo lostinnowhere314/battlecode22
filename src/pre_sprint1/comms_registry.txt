@@ -30,9 +30,9 @@ Things to add:
 6:
 	Archon build instructions
 7:
-	Solder ct (unimplemented)
+	Solder ct
 8:
-	-Unused
+	Solder ct
 9:
 	-Unused
 10: (cts probably until here at least)

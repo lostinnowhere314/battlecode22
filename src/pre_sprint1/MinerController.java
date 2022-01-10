@@ -176,6 +176,10 @@ public class MinerController extends Robot {
 									continue;
 								}
 								
+								//Commented out parts include tiles 2 away
+								// Not included for bytecode reasons
+								// Kind of also helps not overdispersing
+								
 								//int index = robot.location.x-me.x
 								//	+11*(robot.location.y-me.y)+58;
 								int index = robot.location.x-me.x
@@ -366,8 +370,8 @@ public class MinerController extends Robot {
 					MapLocation[] leadLocs = rc.senseNearbyLocationsWithLead(3);
 					for(int i = leadLocs.length; --i>=0 && adjIndex>0;) {
 						MapLocation cl = leadLocs[i];
-						int amt = rc.senseLead(cl) - 1;
-						for (;--amt>=0 && adjIndex>0;) {
+						int amt = rc.senseLead(cl)-1;
+						for (;--amt>0 && adjIndex>0;) {
 							adjIndex--;
 							adjResources[adjIndex] = cl;
 						}

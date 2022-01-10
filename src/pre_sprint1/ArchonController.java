@@ -179,6 +179,9 @@ public class ArchonController extends Robot {
 					break;
 				}
 			}
+			if (rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 0) {
+				enemiesSpotted = true;
+			}
 		}
 		
 		rc.setIndicatorString(Integer.toString(archonOrder));
@@ -229,18 +232,15 @@ public class ArchonController extends Robot {
 		
 			if (buildType == null) {
 				if ((rc.getRoundNum() < 2.2*nearestEnemyArchonDist
-						&& rc.getRoundNum() < 50
-						)|| !enemiesSpotted) {
+						|| rc.getRoundNum() < 60) && !enemiesSpotted) {
 					weights[0] = 1;
 				} else if (rc.getRoundNum() < 500){
 					//TODO calcualte other weights
 					double soldierMinerRatio = Math.sqrt(rc.getRoundNum());
-					double currentRatio = (soldierCount+10) / minerCount;
+					double currentRatio = (soldierCount+10) / (minerCount + 1);
 					
 					weights[0] = currentRatio;
-					if (teamLeadAmt > 60*(totalArchons-archonOrder)) {
-						weights[1] = soldierMinerRatio;
-					}
+					weights[1] = soldierMinerRatio;
 					
 				} else {
 					if (minerCount*16 < mapArea) { // figure out desired miner ct
@@ -264,9 +264,10 @@ public class ArchonController extends Robot {
 						+weights[2] * RobotType.BUILDER.buildCostLead;
 				neededLead *= (totalArchons-archonOrder)/cumWeight;
 				
-				rc.setIndicatorString(String.format("%.1f, (%.2f,%.2f,%.2f)",
-						neededLead, weights[0]/cumWeight,
-						weights[1]/cumWeight, weights[2]/cumWeight));
+				rc.setIndicatorString(String.format("%.1f, (%.2f;%.2f,%.2f,%.2f), (%d, %d)",
+						neededLead, cumWeight, weights[0],
+						weights[1], weights[2],
+						minerCount, soldierCount));
 				
 				if (neededLead > teamLeadAmt) {
 					if (rng.nextDouble()*neededLead > teamLeadAmt) {
