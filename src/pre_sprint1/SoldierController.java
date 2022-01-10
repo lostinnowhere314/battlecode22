@@ -30,8 +30,12 @@ public class SoldierController extends Robot {
 		lastTargetLocation = Util.getRandomMapLocation(rc, rng);
 	}
 
-	private void chooseStateRandom() {
-		mode = (rng.nextDouble()<0.3 ? Mode.WANDER : Mode.ARCHON_TARGET);
+	private void chooseStateRandom(RobotController rc) {
+		if (rc.getRoundNum() > 400) {
+			mode = (rng.nextDouble()<0.05 ? Mode.WANDER : Mode.ARCHON_TARGET);
+		} else {
+			mode = (rng.nextDouble()<0.3 ? Mode.WANDER : Mode.ARCHON_TARGET);
+		}
 	}
 	
 	@Override
@@ -65,7 +69,7 @@ public class SoldierController extends Robot {
 			// Choose new dest if needed
 			if (me.equals(dest) || dest == null) {
 				lastMode = mode;
-				chooseStateRandom();
+				chooseStateRandom(rc);
 		        switch(mode) {
 			        case ARCHON_TARGET:
 			        {
@@ -104,7 +108,7 @@ public class SoldierController extends Robot {
 				}
 				
 				lastMode = mode;
-				chooseStateRandom();
+				chooseStateRandom(rc);
 		        switch(mode) {
 			        case ARCHON_TARGET:
 			        {
@@ -136,8 +140,14 @@ public class SoldierController extends Robot {
 				case SAGE:
 				case SOLDIER:
 				case WATCHTOWER:
-					minDist = 6;
-					maxDist = 13;
+					// Let's try determining whether we'll be able to attack this turn
+					if (rc.isActionReady()) {
+						minDist = 6;
+						maxDist = 13;
+					} else {
+						minDist = 25;
+						maxDist = 40;
+					}
 					break;
 				case BUILDER:
 				case MINER:
@@ -268,12 +278,30 @@ public class SoldierController extends Robot {
 	        MapLocation toAttack = bestRangeTarget.location;
             if (rc.canAttack(toAttack)) {
                 rc.attack(toAttack);
+                if (rc.isMovementReady()) {
+                	switch (bestRangeTarget.type) {
+					case WATCHTOWER:
+					case SAGE:
+					case SOLDIER:
+						Util.move_minrubble_direction_strict(rc, me,
+								me.directionTo(bestRangeTarget.location).opposite(), bugDirection);
+						break;
+					case ARCHON:
+					case BUILDER:
+					case LABORATORY:
+					case MINER:
+					default:
+						break;
+                	}
+                	
+                	
+                }
             }
         } else {
         	if (mode == Mode.ATTACK) {
         		//this bit is kind of really garbage
         		if (lastMode == Mode.ATTACK || lastMode == Mode.COMMS_TARGET) {
-        			chooseStateRandom();
+        			chooseStateRandom(rc);
         		} else {
         			mode = lastMode;
         		}

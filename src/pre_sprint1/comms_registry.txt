@@ -28,7 +28,7 @@ Things to add:
 5:
 	Miner ct
 6:
-	Solder ct (unimplemented)
+	Archon build instructions
 7:
 	Solder ct (unimplemented)
 8:

@@ -7,9 +7,10 @@ public class MinerController extends Robot {
 	// Constants for destination choosing
 	static final int MAX_LEAD_VAL = 20;
 	static final int GOLD_VAL = 15;
-	static final int FRIENDLY_MINER_WEIGHT1 = -100;
-	static final int FRIENDLY_MINER_WEIGHT2 = -50;
-	static final int FRIENDLY_MINER_WEIGHT3 = -15;
+	// Heavy penalties for being directly next to another miner
+	static final int FRIENDLY_MINER_WEIGHT1 = -200;
+	static final int FRIENDLY_MINER_WEIGHT2 = -80;
+	static final int FRIENDLY_MINER_WEIGHT3 = -15; //unused currently for bytecode reasons
 	static final int ENEMY_WEIGHT = -500;
 	static final int ENEMY_MINER_WEIGHT = -30;
 	static final int ENEMY_MINER_MAX_DIST = 24;
@@ -37,6 +38,11 @@ public class MinerController extends Robot {
 	private MapLocation dest = null;
 	private Util.RotationDirection bugDirection;
 	private Direction runDirection = Direction.CENTER;
+	
+	private int impatience = 0;
+	private int ignore_cooldown = 0;
+	static final int MAX_IMPATIENCE = 3;
+	
 	
 	public MinerController(RobotController rc) {
 		super(rc);
@@ -68,7 +74,7 @@ public class MinerController extends Robot {
 		boolean unimportantEnemy = true;
 		
 		//This should really get moved into its own function
-		if (rc.isMovementReady()) {
+		if (rc.isMovementReady() && --ignore_cooldown < 0) {
 			//Used to determine if we want to run away from anything, or move towards resources
 			
 			//determine if there's nearby resources we want to mine; adjust target dest accordingly
@@ -170,38 +176,41 @@ public class MinerController extends Robot {
 									continue;
 								}
 								
-								int index = robot.location.x-me.x+11*(robot.location.y-me.y)+58;
+								//int index = robot.location.x-me.x
+								//	+11*(robot.location.y-me.y)+58;
+								int index = robot.location.x-me.x
+										+11*(robot.location.y-me.y)+59;
 								
 								// x-2
-								weights[index] += FRIENDLY_MINER_WEIGHT3;
-								weights[index-11] += FRIENDLY_MINER_WEIGHT3;
-								weights[index+11] += FRIENDLY_MINER_WEIGHT3;
+								//weights[index] += FRIENDLY_MINER_WEIGHT3;
+								//weights[index-11] += FRIENDLY_MINER_WEIGHT3;
+								//weights[index+11] += FRIENDLY_MINER_WEIGHT3;
 								
 								// x-1
 								weights[++index] += FRIENDLY_MINER_WEIGHT2;
 								weights[index-11] += FRIENDLY_MINER_WEIGHT2;
 								weights[index+11] += FRIENDLY_MINER_WEIGHT2;
-								weights[index-22] += FRIENDLY_MINER_WEIGHT3;
-								weights[index+22] += FRIENDLY_MINER_WEIGHT3;
+								//weights[index-22] += FRIENDLY_MINER_WEIGHT3;
+								//weights[index+22] += FRIENDLY_MINER_WEIGHT3;
 	
 								// x
 								weights[++index] += FRIENDLY_MINER_WEIGHT1;
 								weights[index-11] += FRIENDLY_MINER_WEIGHT2;
 								weights[index+11] += FRIENDLY_MINER_WEIGHT2;
-								weights[index-22] += FRIENDLY_MINER_WEIGHT3;
-								weights[index+22] += FRIENDLY_MINER_WEIGHT3;
+								//weights[index-22] += FRIENDLY_MINER_WEIGHT3;
+								//weights[index+22] += FRIENDLY_MINER_WEIGHT3;
 	
 								// x+1
 								weights[++index] += FRIENDLY_MINER_WEIGHT2;
 								weights[index-11] += FRIENDLY_MINER_WEIGHT2;
 								weights[index+11] += FRIENDLY_MINER_WEIGHT2;
-								weights[index-22] += FRIENDLY_MINER_WEIGHT3;
-								weights[index+22] += FRIENDLY_MINER_WEIGHT3;
+								//weights[index-22] += FRIENDLY_MINER_WEIGHT3;
+								//weights[index+22] += FRIENDLY_MINER_WEIGHT3;
 								
 								// x+2
-								weights[++index] += FRIENDLY_MINER_WEIGHT3;
-								weights[index-11] += FRIENDLY_MINER_WEIGHT3;
-								weights[index+11] += FRIENDLY_MINER_WEIGHT3;
+								//weights[++index] += FRIENDLY_MINER_WEIGHT3;
+								//weights[index-11] += FRIENDLY_MINER_WEIGHT3;
+								//weights[index+11] += FRIENDLY_MINER_WEIGHT3;
 							}
 								break;
 							case ARCHON:
@@ -424,14 +433,16 @@ public class MinerController extends Robot {
 				case SUCCESS:
 					break;
 				case FAILURE:
+					impatience++;
 					//todo add impatience
 				case NO_MOVE:
 				default:
 					//select a new destination if we're stuck?
 					//this might cause problems
-					if (adjIndex > 0) {
+					if (adjIndex > 0 || impatience >= MAX_IMPATIENCE) {
 						// TODO select a location within a certain smaller distance
 						dest = Util.getRandomMapLocation(rc, rng);
+						ignore_cooldown = 4;
 					}
 					break;
 				}
