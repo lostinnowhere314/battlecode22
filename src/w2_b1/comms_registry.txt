@@ -1,0 +1,134 @@
+Things to add:
+	-Archon positions
+	-Map symmetry
+	-Threat coordinates
+
+0:
+	Lower 12: Archon 0 pos
+	Upper 4: which of our archons are alive (unimplemented)
+1:
+	Lower 12: Archon 1 pos
+	14-15: total archon count-1
+	12-13: symmetry type (unimplemented)
+		0 - unknown
+		1 - h reflect
+		2 - v reflect
+		3 - rotation
+2:
+	Lower 12: Archon 2 pos
+	Upper 3 bits: disproven symmetry types
+		13 - h reflect
+		14 - v reflect
+		15 - rotation
+3:
+	Lower 12: Archon 3 pos
+	Upper 4: which enemy archons are still alive (unimplemented)
+4:
+	Miner ct
+5:
+	Miner ct
+6:
+	Archon build instructions
+7:
+	Solder ct
+8:
+	Solder ct
+9:
+	-Unused
+10: (cts probably until here at least)
+	-Unused
+11:
+	-Unused
+12:
+	-Unused
+13:
+	-Unused
+14:
+	-Unused
+15:
+	-Unused
+16:
+	-Unused
+17:
+	-Unused
+18:
+	-Unused
+19:
+	-Unused
+20:
+	-Unused
+21:
+	-Unused
+22:
+	-Unused
+23:
+	-Unused
+24:
+	-Unused
+25:
+	-Unused
+26:
+	-Unused
+27:
+	-Unused
+28:
+	-Unused
+29:
+	-Unused
+30:
+	-Unused
+31:
+	-Unused
+32:
+	-Unused
+33:
+	-Unused
+34:
+	-Unused
+35:
+	-Unused
+36:
+	-Unused
+37:
+	-Unused
+38:
+	-Unused
+39:
+	-Unused
+40:
+	-Unused
+41:
+	-Unused
+42:
+	-Unused
+43:
+	-Unused
+44:
+	-Unused
+45:
+	-Unused
+46:
+	-Unused
+47:
+	-Unused
+48:
+	-Unused
+49:
+	-Unused
+50:
+	-Unused
+51:
+	-Unused
+52:
+	-Unused
+53:
+	-Unused
+54:
+	-Unused
+55:
+	-Unused
+56-63:
+	-Miner threat channels
+	Format:
+		Lower 12: position of enemy unit
+		Upper 4: 1+(round mod 15) that it was posted
