@@ -269,9 +269,11 @@ public class ArchonController extends Robot {
 						weights[1], weights[2],
 						minerCount, soldierCount));
 				
-				if (neededLead > teamLeadAmt) {
-					if (rng.nextDouble()*neededLead > teamLeadAmt) {
-						return;
+				if ((totalArchons - archonOrder) > 1) {
+					if (neededLead > teamLeadAmt) {
+						if (rng.nextDouble()*neededLead > teamLeadAmt) {
+							return;
+						}
 					}
 				}
 				
