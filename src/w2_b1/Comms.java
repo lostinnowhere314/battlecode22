@@ -73,10 +73,29 @@ public class Comms {
 		//}
 	}
 	
+	// Clear all targeting locations that are congruent to this round mod 7 or 15.
+	// Only should be called by archons
+	public static void clearCommsTargets(RobotController rc) throws GameActionException {
+
+		for (int i=64; --i>=56;) {
+			// Miners' messages
+			if ((rc.getRoundNum() - (rc.readSharedArray(i)>>12) - 1) % 15 == 0) {
+				rc.writeSharedArray(i, 0);
+			}
+		}
+
+		for (int i=56; --i>=48;) {
+			// Soldiers' messages
+			if ((rc.getRoundNum() - (((rc.readSharedArray(i)>>12) - 1)&7)) % 7 == 0) {
+				rc.writeSharedArray(i, 0);
+			}
+		}
+	}
+	
 	// Stores x,y location in lower bits of integer
 	public static MapLocation getLocationFromComms(RobotController rc, int i) throws GameActionException {
 		int val = rc.readSharedArray(i);
-		return new MapLocation(val&63, (val&4062)/64);
+		return new MapLocation(val&63, (val>>6)&63);
 	}
 	
 	public static int getStoredArchonCount(RobotController rc) throws GameActionException {

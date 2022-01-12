@@ -220,7 +220,7 @@ public class MinerController extends Robot {
 					messagePos = -1;
 				// check if we should clear it
 				} else if (enemyLocation==null && 
-						readMessageTime == ((rc.getRoundNum()-1 % 15) + 1)) {
+						readMessageTime%15 == (rc.getRoundNum()-4) % 15) {
 					//clear if it's been around for too long
 					rc.writeSharedArray(messagePos, 0);
 					messagePos = -1;

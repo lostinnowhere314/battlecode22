@@ -6,6 +6,8 @@ import w2_b1.Comms;
 
 public class SoldierController extends Robot {
 
+
+	static final int MIN_MESSAGE_NOOVERWRITE = 3;
 	
 	private static enum Mode {
 		ARCHON_TARGET,
@@ -21,13 +23,20 @@ public class SoldierController extends Robot {
 	private Mode lastMode = Mode.WANDER;
 	private int lastTargetID = -1;
 	private MapLocation lastTargetLocation = null;
+	private Direction prevMoveDirection = Direction.CENTER;
 	
+	private double mapRadius;
+	
+	//Comms stuff
+	private int lastMessageTime = -1;
+	private int messagePos = -1;
 	
 	public SoldierController(RobotController rc) {
 		super(rc);
 		bugDirection = rng.nextDouble()>0.5 ? 
 				Util.RotationDirection.CLOCKWISE : Util.RotationDirection.COUNTERCLOCKWISE;
 		lastTargetLocation = Util.getRandomMapLocation(rc, rng);
+		mapRadius = rc.getMapHeight()*rc.getMapWidth()/4;
 	}
 
 	private void chooseStateRandom(RobotController rc) {
@@ -50,44 +59,39 @@ public class SoldierController extends Robot {
 		case WANDER:
 		{
 			// Check comms for new messages
-			int mostRecent = 16;
-			int recentIndex = -1;
-			for (int i=64; --i>=56;) {
-				int val = rc.readSharedArray(i);
-				if (val > 0) {
-					int time = (rc.getRoundNum()+1 - (val >> 12))%15;
-					if (time < mostRecent) {
-						mostRecent = time;
-						recentIndex = i;
-					}
-				}
+			double scanDist = mapRadius/2;
+			if (scanDist < 256) {
+				scanDist = 256;
 			}
-			if (recentIndex > 0) {
-				dest = Comms.getLocationFromComms(rc, recentIndex);
+			MapLocation closestBroadcastDest = scanCommsSoldierTargets(rc, scanDist);
+			if (closestBroadcastDest == null) {
+				closestBroadcastDest = scanCommsMinerTargets(rc, scanDist);
+			}
+			if (closestBroadcastDest != null) {
+				dest = closestBroadcastDest;
+				lastMode = mode;
 				mode = Mode.COMMS_TARGET;
 			}
+			checkIfNewLocation(rc);
+			//Util.move_minrubble(rc, me, dest);
+			moveToDest(rc, dest);
 		}
+		break;
 		case COMMS_TARGET:
 		{	
-			// Choose new dest if needed
-			if (me.equals(dest) || dest == null) {
-				lastMode = mode;
-				chooseStateRandom(rc);
-		        switch(mode) {
-			        case ARCHON_TARGET:
-			        {
-			        	Util.ArchonTarget target = Util.getNearestEnemyArchonLocation(rc, rng);
-			        	dest = target.location;
-			        	symType = target.symmetry;
-			        }
-			        case WANDER:
-			        	dest = Util.getRandomMapLocation(rc, rng);
-			    	default:
-		        }
+			// See if there's somewhere closer we want to be
+			MapLocation closestBroadcastDest = scanCommsAllTargets(rc, 1000);
+			if (closestBroadcastDest!=null &&
+					me.distanceSquaredTo(closestBroadcastDest) < me.distanceSquaredTo(dest)) {
+				dest = closestBroadcastDest;
 			}
-	        // Use the function to move
-			Util.move_minrubble(rc, me, dest);
+			// Choose new dest if needed
+			checkIfNewLocation(rc);
+	        // Move
+			//Util.move_minrubble(rc, me, dest);
+			moveToDest(rc, dest);
 		}
+		break;
 		case ARCHON_TARGET:
 		{
 			// Choose potential archon to target
@@ -115,7 +119,7 @@ public class SoldierController extends Robot {
 		        switch(mode) {
 			        case ARCHON_TARGET:
 			        {
-			        	Util.ArchonTarget target = Util.getNearestEnemyArchonLocation(rc, rng);
+			        	Util.ArchonTarget target = Util.getNearestEnemyArchonLocation(rc);
 			        	dest = target.location;
 			        	symType = target.symmetry;
 			        }
@@ -124,8 +128,16 @@ public class SoldierController extends Robot {
 			    	default:
 		        }
 			}
+
+	        MapLocation closestBroadcastDest = scanCommsSoldierTargets(rc, 65);
+			if (closestBroadcastDest != null) {
+				dest = closestBroadcastDest;
+				lastMode = mode;
+				mode = Mode.COMMS_TARGET;
+			}
 	        // Use the function to move
-			Util.move_minrubble(rc, me, dest);
+			//Util.move_minrubble(rc, me, dest);
+			moveToDest(rc, dest);
 		}
 			break;
 		case ATTACK:
@@ -179,11 +191,13 @@ public class SoldierController extends Robot {
 									bugDirection));
 					}
 				}*/
-				
 			} else {
 				// If not, try moving towards them
-				Util.move_minrubble(rc, me, lastTargetLocation);
+				moveToDest(rc, lastTargetLocation);
+				//Util.move_minrubble(rc, me, lastTargetLocation); //replace with move_dest()
 			}
+			prevMoveDirection = Direction.CENTER;
+			
 		}
 			break;
 		default:
@@ -276,30 +290,49 @@ public class SoldierController extends Robot {
 					case ATTACK:
 					default:
 	        	}
+	        	
+	        	switch(bestTarget.type) {
+				case ARCHON:
+				case SAGE:
+				case LABORATORY:
+				case SOLDIER:
+				case WATCHTOWER:
+		            //Broadcast enemy locations
+		            broadcastTargetLocation(rc, bestTarget);
+					break;
+				case BUILDER:
+				case MINER:
+				default:
+					break;
+	        	
+	        	}
 	        }
-	        //Attack if we can
-	        MapLocation toAttack = bestRangeTarget.location;
-            if (rc.canAttack(toAttack)) {
-                rc.attack(toAttack);
-                if (rc.isMovementReady()) {
-                	switch (bestRangeTarget.type) {
-					case WATCHTOWER:
-					case SAGE:
-					case SOLDIER:
-						Util.move_minrubble_direction_strict(rc, me,
-								me.directionTo(bestRangeTarget.location).opposite(), bugDirection);
-						break;
-					case ARCHON:
-					case BUILDER:
-					case LABORATORY:
-					case MINER:
-					default:
-						break;
-                	}
-                	
-                	
-                }
-            }
+	        if (bestRangeTargetScore>0) {
+		        //Attack if we can
+		        MapLocation toAttack = bestRangeTarget.location;
+	            if (rc.canAttack(toAttack)) {
+	                rc.attack(toAttack);
+	                if (rc.isMovementReady()) {
+	                	switch (bestRangeTarget.type) {
+						case WATCHTOWER:
+						case SAGE:
+						case SOLDIER:
+							Util.move_minrubble_direction_strict(rc, me,
+									me.directionTo(bestRangeTarget.location).opposite(), bugDirection);
+							break;
+						case ARCHON:
+						case BUILDER:
+						case LABORATORY:
+						case MINER:
+						default:
+							break;
+	                	}
+	                	
+	                	
+	                }
+	            }
+	        }
+            
         } else {
         	if (mode == Mode.ATTACK) {
         		//this bit is kind of really garbage
@@ -316,7 +349,166 @@ public class SoldierController extends Robot {
         	rc.setIndicatorLine(me, dest, 0,150,50);
         }
 		rc.setIndicatorString(mode.toString());
-        Direction[] dirs = {Direction.SOUTHWEST, Direction.EAST};
+
+
+		cleanMessageSlot(rc);
+	}
+	
+	private void moveToDest(RobotController rc, MapLocation target) throws GameActionException {
+		
+		if (rc.isMovementReady()) {
+			MapLocation me = rc.getLocation();
+			// Get the direciton to move
+			Direction direction = SoldierPathfinding.getBestDirection(rc, target, prevMoveDirection);
+			
+			// Check if we should actually move that way
+			if (direction != null && direction != Direction.CENTER) {
+				rc.setIndicatorDot(me.add(direction), 120, 0, 0);
+				if (!rc.isLocationOccupied(me.add(direction))) {
+					rc.move(direction);
+					prevMoveDirection = direction;
+				}
+			}
+		}
 	}
 
+	private void broadcastTargetLocation(RobotController rc, RobotInfo bestTarget) throws GameActionException {
+		if (messagePos < 0) {
+			int best_diff = -1;
+			for (int i=56; --i>=48;) {
+				int val;
+				if (rc.readSharedArray(i)==0) { //prioritize empty slots
+					val = 100;
+				} else {
+					val = ((1+rc.getRoundNum() - ((rc.readSharedArray(i) >> 12)&7)) % 7);
+				}
+				int diff = val - MIN_MESSAGE_NOOVERWRITE;
+				if (diff > best_diff) {
+					messagePos = i;
+					best_diff = diff;
+				}
+			}
+			if (best_diff < 0) messagePos = -1;  
+		}
+		
+		if (messagePos > 0) {
+			// Write the message
+			lastMessageTime = (rc.getRoundNum() % 7) + 1;
+			int message = (lastMessageTime<<12)
+					+ (bestTarget.location.y<<6)
+					+ bestTarget.location.x;
+			switch(bestTarget.type) {
+			case ARCHON:
+				message += 32768;
+				break;
+			case BUILDER:
+				break;
+			case LABORATORY:
+				break;
+			case MINER:
+				break;
+			case SAGE:
+				break;
+			case SOLDIER:
+				break;
+			case WATCHTOWER:
+				break;
+			default:
+				break;
+			}
+			rc.writeSharedArray(messagePos, message);
+		}
+	}
+	
+	private void cleanMessageSlot(RobotController rc) throws GameActionException {
+		if (messagePos > 0) {
+			int readMessageTime = (rc.readSharedArray(messagePos) >> 12)&7;
+			// check that our last message hasn't been overwritten
+			if (readMessageTime != lastMessageTime) {
+				messagePos = -1;
+			// check if we should clear it
+			} else if (readMessageTime%7 == rc.getRoundNum() % 7) {
+				//clear if it's been around for too long
+				rc.writeSharedArray(messagePos, 0);
+				messagePos = -1;
+			}
+		}
+	}
+	
+	private void checkIfNewLocation(RobotController rc) throws GameActionException {
+		// Choose new dest if needed
+		if (rc.getLocation().distanceSquaredTo(dest) < 15 || dest == null) {
+			lastMode = mode;
+			chooseStateRandom(rc);
+	        switch(mode) {
+		        case ARCHON_TARGET:
+		        {
+		        	Util.ArchonTarget target = Util.getNearestEnemyArchonLocation(rc);
+		        	dest = target.location;
+		        	symType = target.symmetry;
+		        }
+		        case WANDER:
+		        	dest = Util.getRandomMapLocation(rc, rng);
+		    	default:
+	        }
+		}
+	}
+	
+	private static MapLocation scanCommsMinerTargets(RobotController rc, double maxDistance2) throws GameActionException {
+		// Check comms for new messages
+		MapLocation me = rc.getLocation();
+		MapLocation bestDest = null;
+		double bestDistance = maxDistance2+1;
+		for (int i=64; --i>=56;) {
+			if (rc.readSharedArray(i)!=0) {
+				MapLocation other = Comms.getLocationFromComms(rc, i);
+				int dist = other.distanceSquaredTo(me);
+				if (dist < bestDistance) {
+					bestDest = other;
+					bestDistance = dist;
+				}
+			}
+		}
+		
+		return bestDest;
+	}
+
+	private static MapLocation scanCommsSoldierTargets(RobotController rc, double maxDistance2) throws GameActionException {
+		// Check comms for new messages
+		MapLocation me = rc.getLocation();
+		MapLocation bestDest = null;
+		double bestDistance = maxDistance2+1;
+		for (int i=56; --i>=48;) {
+			if (rc.readSharedArray(i)!=0) {
+				MapLocation other = Comms.getLocationFromComms(rc, i);
+				int dist = other.distanceSquaredTo(me);
+				if (dist < bestDistance) {
+					bestDest = other;
+					bestDistance = dist;
+				}
+			}
+		}
+		
+		return bestDest;
+	}
+
+
+	private static MapLocation scanCommsAllTargets(RobotController rc, double maxDistance2) throws GameActionException {
+		// Check comms for new messages
+		MapLocation me = rc.getLocation();
+		MapLocation bestDest = null;
+		double bestDistance = maxDistance2+1;
+		for (int i=64; --i>=48;) {
+			if (rc.readSharedArray(i)!=0) {
+				MapLocation other = Comms.getLocationFromComms(rc, i);
+				int dist = other.distanceSquaredTo(me);
+				if (dist < bestDistance) {
+					bestDest = other;
+					bestDistance = dist;
+				}
+			}
+		}
+		
+		return bestDest;
+	}
 }

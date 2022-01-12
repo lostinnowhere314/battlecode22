@@ -298,7 +298,11 @@ public class ArchonController extends Robot {
 			if (buildType != null) {
 				tryBuildRobot(rc, buildType);
 			}
+			
+			
 		}
+		
+		Comms.clearCommsTargets(rc);
 	}
 	
 	private boolean tryBuildRobot(RobotController rc, RobotType type) throws GameActionException {

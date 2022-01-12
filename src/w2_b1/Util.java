@@ -66,7 +66,7 @@ public class Util {
 	/*
 	 * Warning: this might be somewhat of an expensive method
 	 */
-	public static ArchonTarget getNearestEnemyArchonLocation(RobotController rc, Random rng) throws GameActionException {
+	public static ArchonTarget getNearestEnemyArchonLocation(RobotController rc) throws GameActionException {
 		MapLocation me = rc.getLocation();
 		int teamArchonCount = Comms.getStoredArchonCount(rc);
 		
