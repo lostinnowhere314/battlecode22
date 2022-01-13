@@ -1,21 +1,7 @@
 
+from scriptgen import *
 import numpy as np
 import sys
-
-def dist2(x1,y1,x2,y2):
-    return (x1-x2)**2+(y1-y2)**2
-    
-def name(string, x, y):
-    if x<0:
-        sx = 'n'+str(-x)
-    else:
-        sx = str(x)
-    if y<0:
-        sy = 'n'+str(-y)
-    else:
-        sy = str(y)
-    
-    return string.format(sx,sy)
 
 def loc(x,y):
     return name('loc_{}_{}',x,y)
@@ -29,11 +15,6 @@ def direc(x,y):
 def dist(x,y):
     return name('dist_{}_{}',x,y)
 
-def writeline(file,tabct,string):
-    file.write('\t'*tabct+string+'\n')
-    
-def writeline_s(tabct,string):
-    return '\t'*tabct+string+'\n'
 
 def is_on_boundary(x,y,radius2):
     #Determine if a point is on the boundary of the circle;
@@ -96,7 +77,7 @@ def generate_script(file, classname, package_name, n, max_r2, tile_cost, multipl
     file.write(declarations)
     writeline(file,1,'')
     
-    #start of function TODO
+    #start of function
     writeline(file,1,'public static Direction getBestDirection(RobotController rc, MapLocation dest, Direction lastMoveDirection) throws GameActionException {')
     
     writeline(file,2,'')
