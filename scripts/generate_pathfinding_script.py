@@ -191,7 +191,12 @@ def generate_script(file, classname, package_name, n, max_r2, tile_cost, multipl
     writeline(file,2,'bestDistance = 1000000;')
     writeline(file,2,'bestDirection = null;')
     writeline(file,2,'')
-    writeline(file,2,'switch(me.directionTo(dest)) {')
+    #Try moving in the same direction we moved last time
+    writeline(file,2,'if (lastMoveDirection == null || lastMoveDirection == Direction.CENTER) {')
+    writeline(file,3,'lastMoveDirection = me.directionTo(dest);')
+    writeline(file,2,'}')
+    writeline(file,2,'')
+    writeline(file,2,'switch(lastMoveDirection) {')
     for dx, dy, dname in zip(dx_list, dy_list, direction_list):
         #We only will use points that are within [something]*max_r2 distance squared of a point in the direction on our boundary
         diff_vect = np.array([dx,dy], dtype=float)
