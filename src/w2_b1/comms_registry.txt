@@ -9,7 +9,7 @@ Things to add:
 1:
 	Lower 12: Archon 1 pos
 	14-15: total archon count-1
-	12-13: symmetry type (unimplemented)
+	12-13: symmetry type
 		0 - unknown
 		1 - h reflect
 		2 - v reflect
