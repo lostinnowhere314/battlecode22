@@ -129,7 +129,7 @@ public class SoldierUtil {
 							
 				}
 			}
-			return new TargetingResult(bestTargets[1][1], me.directionTo(bestLocation), MoveOrder.BEFORE);
+			return new TargetingResult(bestTargets[1][1], me.directionTo(bestLocation), MoveOrder.BEFORE, true, true, false);
 			
 		} else {
 			MapLocation me = rc.getLocation();
@@ -147,7 +147,7 @@ public class SoldierUtil {
 					}
 				}
 			}
-			return new TargetingResult(bestEnemy, Direction.CENTER, MoveOrder.NONE);
+			return new TargetingResult(bestEnemy, Direction.CENTER, MoveOrder.NONE, true, false, false);
 		}
 		
 		

@@ -3,6 +3,7 @@ package w2_soldierheuristics;
 import battlecode.common.*;
 import w2_soldierheuristics.Util.ArchonTarget;
 import w2_soldierheuristics.Util.MapSymmetryType;
+import w2_soldierheuristics.Util.RotationDirection;
 import w2_soldierheuristics.Util.TargetingResult;
 import w2_soldierheuristics.Comms;
 
@@ -44,9 +45,9 @@ public class SoldierController extends Robot {
 
 	private void chooseStateRandom(RobotController rc) {
 		if (rc.getRoundNum() > 400) {
-			mode = (rng.nextDouble()<0.05 ? Mode.WANDER : Mode.ARCHON_TARGET);
-		} else {
 			mode = (rng.nextDouble()<0.3 ? Mode.WANDER : Mode.ARCHON_TARGET);
+		} else {
+			mode = (rng.nextDouble()<0.5 ? Mode.WANDER : Mode.ARCHON_TARGET);
 		}
 	}
 	
@@ -80,46 +81,52 @@ public class SoldierController extends Robot {
 			indicatorString += ", ";
 			indicatorString += targetResult.order;
     		/////////////////////
+			
+			
     		
     		switch (targetResult.order) {
 			case AFTER:
 				{
-					if (targetResult.target != null && rc.isActionReady()) {
+					if (targetResult.canAttack) {
 						rc.attack(targetResult.target.location);
 					}
-					if (targetResult.moveDirection != null) {
-						if (targetResult.moveDirection != Direction.CENTER)
+					if (targetResult.canMove) {
+						if (targetResult.retreat) {
+							System.out.println("Retreating");
+							Util.move_minrubble_direction(rc, me, targetResult.moveDirection, RotationDirection.CLOCKWISE);
+						} else if (targetResult.moveDirection == null) {
+							moveToDest(rc, dest);
+						} else {
 							rc.move(targetResult.moveDirection);
-					} else {
-						moveToDest(rc, dest);
+						}
 					}
-					hasMoved = true;
 				}
 				break;
 			case BEFORE:
 				{
-					if (targetResult.moveDirection != null) {
-						if (targetResult.moveDirection != Direction.CENTER)
+					if (targetResult.canMove) {
+						if (targetResult.moveDirection == null) {
+							moveToDest(rc, dest);
+						} else {
 							rc.move(targetResult.moveDirection);
-					} else {
-						moveToDest(rc, dest);
+						}
 					}
-					if (targetResult.target != null && rc.isActionReady()) {
+					if (targetResult.canAttack) {
 						rc.attack(targetResult.target.location);
 					}
-					hasMoved = true;
 				}
 				break;
 			case NONE:
 			default:
 				{
 					// Moving isn't possible, so just attack
-					if (targetResult.target != null && rc.isActionReady()) {
+					if (targetResult.canAttack) {
 						rc.attack(targetResult.target.location);
 					}
 				}
 				break;
     		}
+			hasMoved = true;
     		//Broadcast enemy locations as appropriate
     		if (targetResult.target != null) {
 	    		switch(targetResult.target.type) {

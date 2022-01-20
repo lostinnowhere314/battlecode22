@@ -13,15 +13,24 @@ public class Util {
 		NONE
 	}
 	
+	public static enum TargetingDecision {
+		BOTH,
+	}
+	
 	public static class TargetingResult {
 		public MoveOrder order;
 		public Direction moveDirection;
 		public RobotInfo target;
+		public boolean canAttack, canMove, retreat;
 		
-		public TargetingResult(RobotInfo t, Direction d, MoveOrder o) {
+		public TargetingResult(RobotInfo t, Direction d, MoveOrder o,
+				boolean ca, boolean cm, boolean r) {
 			target = t;
 			moveDirection = d;
 			order = o;
+			canAttack = ca;
+			canMove = cm;
+			retreat = r;
 		}
 	}
 	
