@@ -270,16 +270,16 @@ public class ArchonController extends Robot {
 			int numCanBuildSages = teamGoldAmt / 50;
 			if (numCanBuildSages > 0) {
 				if (numCanBuildSages >= totalArchons-archonOrder) {
-					// buildType = RobotType.SAGE;
+					buildType = RobotType.SAGE;
 				} else if (rng.nextInt(totalArchons-archonOrder)<numCanBuildSages ) {
-					// buildType = RobotType.SAGE;
+					buildType = RobotType.SAGE;
 				}
 			}
 		
 			if (buildType == null) {
 				if ((rc.getRoundNum() < 2.2*nearestEnemyArchonDist
 						|| rc.getRoundNum() < 60) && !enemiesSpotted) {
-					weights[0] = 1;
+					weights[0] = 10;
 				} else if (rc.getRoundNum() < 500){
 					//TODO calcualte other weights
 					double soldierMinerRatio = Math.sqrt(rc.getRoundNum());
@@ -295,6 +295,9 @@ public class ArchonController extends Robot {
 					weights[1] = 5;
 				}
 				
+				if (teamLeadAmt > 200) {
+					weights[2] = 1;
+				}
 				
 				//Find the chosen one
 				double cumWeight = 0;
@@ -344,7 +347,7 @@ public class ArchonController extends Robot {
 					} else {
 						chosenWeight -= weights[2];
 						if (chosenWeight < 0) {
-							// buildType = RobotType.BUILDER;
+							buildType = RobotType.BUILDER;
 						}
 					}
 				}
